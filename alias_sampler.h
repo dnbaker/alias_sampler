@@ -91,6 +91,19 @@ public:
     }
     IT operator()() const noexcept {return sample();}
     IT operator()()       noexcept {return sample();}
+    std::vector<IT> operator()(size_t n) {
+        std::vector<IT> ret(n);
+        for(IT i = 0; i < n; ++i)
+            ret[i] = div_.mod(rng_());
+        std::sort(ret.begin(), ret.end());
+        for(IT i = 0; i < n; ++i)
+            if(urd_(rng_) >= prob_[ret[i]])
+                ret[i] = alias_[i];
+    }
+    std::vector<IT> operator()(size_t n) const {
+        CONST_IF(!mutable_rng) throw std::runtime_error("Not permitted.");
+        return const_cast<AliasSampler *>(this)->operator()(n);
+    }
     IT sample() noexcept {
         const auto ind = div_.mod(rng_());
         return urd_(rng_) < prob_[ind] ? ind : alias_[ind];
@@ -99,6 +112,8 @@ public:
         CONST_IF(!mutable_rng) throw std::runtime_error("Not permitted.");
         return const_cast<AliasSampler *>(this)->sample();
     }
+    auto sample(size_t n) const {return this->operator()(n);}
+    auto sample(size_t n)       {return this->operator()(n);}
 };
 
 template<typename FT=float,
@@ -151,6 +166,21 @@ public:
     }
     IT operator()() const noexcept {return sample();}
     IT operator()()       noexcept {return sample();}
+    std::vector<IT> operator()(size_t n) {
+        std::vector<IT> ret(n);
+        for(IT i = 0; i < n; ++i)
+            ret[i] = this->rng_() & bitmask_;
+        std::sort(ret.begin(), ret.end());
+        for(IT i = 0; i < n; ++i)
+            if(this->urd_(this->rng_) >= this->prob_[ret[i]])
+                ret[i] = this->alias_[i];
+    }
+    std::vector<IT> operator()(size_t n) const {
+        CONST_IF(!mutable_rng) throw std::runtime_error("Not permitted.");
+        return const_cast<MaskedAliasSampler *>(this)->operator()(n);
+    }
+    auto sample(size_t n) const {return this->operator()(n);}
+    auto sample(size_t n)       {return this->operator()(n);}
     IT sample() noexcept {
         const auto ind = this->rng_() & bitmask_;
         return this->urd_(this->rng_) < this->prob_[ind] ? ind : this->alias_[ind];

@@ -3,6 +3,7 @@
 #include <type_traits>
 #include <cstdint>
 #include <random>
+#include <cstdexcept>
 #include <memory>
 
 namespace alias {
@@ -57,6 +58,14 @@ struct alias_sampler {
     IT sample() {
         const auto ind = rng_() % n_; // Accelerate with fastrange later
         return urd_(rng_) < prob_[ind] ? ind : alias_[ind];
+    }
+    IT sample() const {
+        if constexpr(mutable_rng) {
+            const auto ind = rng_() % n_; // Accelerate with fastrange later
+            return urd_(rng_) < prob_[ind] ? ind : alias_[ind];
+        } else {
+            throw std::runtime_error("Not permitted.");
+        }
     }
 };
 } // alias

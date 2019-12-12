@@ -9,7 +9,7 @@
 #include "./div.h"
 
 namespace alias {
-template<typename FT, typename IT=std::uint32_t, typename RNG=std::mt19937_64, bool mutable_rng=true>
+template<typename FT=float, typename IT=std::uint32_t, typename RNG=std::mt19937_64, bool mutable_rng=true>
 struct AliasSampler {
     size_t n_;
     mutable RNG rng_;
@@ -25,43 +25,53 @@ struct AliasSampler {
         auto cp(std::make_unique<FT[]>(n_));
         prob_ = std::make_unique<FT[]>(n_);
         FT sum = 0.;
-        for(IT i = 0; i < n_; ++i) {
+        for(auto it = cp.get(), e = it + n_; it < e; ++it) {
             auto v = *start++;
             sum += v;
-            cp[i] = v;
+            *it = v;
         }
         sum = double(n_) / sum;
         
-        for(IT i = 0; i < n_; ++i)
-            cp[i] *= sum;
+        std::for_each(cp.get(), cp.get() + n_, [sum](auto &x) {x *= sum;});
+#if USE_STACK
+#error("Needs debugging.");
+        std::vector<IT> lb, sb;
+        for(IT k = n_; k--; cp[k] < 1 ? sb.push_back(k): lb.push_back(k));
+#else
         auto lb = std::make_unique<IT []>(n_), sb = std::make_unique<IT []>(n_);
         IT nsb = 0, nlb = 0;
-        for(IT k = n_; k--;) {
-            if(cp[k] < 1)
-                sb[nsb++] = k;
-            else
-                lb[nlb++] = k;
-        }
-        while(nsb > 0&& nlb > 0) {
-            auto csb = sb[--nsb];
-            auto clb = lb[--nlb];
-            assert(prob_.get());
+        for(IT k = n_; k--;cp[k] < 1 ? sb[nsb++] = k: lb[nlb++] = k);
+#endif
+
+#if USE_STACK
+        while(sb.size() && lb.size()) {
+            auto csb = sb.back(), clb = lb.back();
+            sb.pop_back(); lb.pop_back();
             prob_[csb] = cp[csb];
-            assert(alias_.get());
             alias_[csb] = clb;
             cp[clb] += cp[csb] - 1.;
-            if(cp[clb] < 1) {
+            if(cp[clb] < 1)
+                sb.push_back(clb);
+            else
+                lb.push_back(clb);
+        }
+        for(auto v: lb) prob_[lb[v]] = 1.;
+        for(auto v: sb) prob_[sb[v]] = 1.;
+#else
+        while(nsb && nlb) {
+            auto csb = sb[--nsb];
+            auto clb = lb[--nlb];
+            prob_[csb] = cp[csb];
+            alias_[csb] = clb;
+            cp[clb] += cp[csb] - 1.;
+            if(cp[clb] < 1)
                 sb[nsb++] = clb;
-            } else {
+            else
                 lb[nlb++] = clb;
-            }
         }
-        while(nlb) {
-            prob_[lb[--nlb]] = 1.;
-        }
-        while(nsb) {
-            prob_[sb[--nsb]] = 1.;
-        }
+        while(nlb) prob_[lb[--nlb]] = 1.;
+        while(nsb) prob_[sb[--nsb]] = 1.;
+#endif
     }
     IT operator()() const {return sample();}
     IT operator()()       {return sample();}

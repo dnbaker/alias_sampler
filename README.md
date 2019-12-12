@@ -1,4 +1,4 @@
-# alias_sampler  [![Build Status](https://travis-ci.com/dnbaker/alias_sampler.svg?branch=master)](https://travis-ci.com/dnbaker/alias_sampler)
+# alias_sampler 🎭 [![Build Status](https://travis-ci.com/dnbaker/alias_sampler.svg?branch=master)](https://travis-ci.com/dnbaker/alias_sampler)
 
 Alias sampling, for sampling from discrete probability distributions in constant time.
 

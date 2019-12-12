@@ -33,20 +33,13 @@ struct AliasSampler {
         sum = double(n_) / sum;
         
         std::for_each(cp.get(), cp.get() + n_, [sum](auto &x) {x *= sum;});
-#if USE_STACK
-#error("Needs debugging.");
-        std::vector<IT> lb, sb;
-        for(IT k = n_; k--; cp[k] < 1 ? sb.push_back(k): lb.push_back(k));
-#else
-        auto lb = std::make_unique<IT []>(n_), sb = std::make_unique<IT []>(n_);
-        IT nsb = 0, nlb = 0;
-        for(IT k = n_; k--;cp[k] < 1 ? sb[nsb++] = k: lb[nlb++] = k);
-#endif
+        std::vector<IT> sb, lb;
+        for(IT k = n_; k--;cp[k] < 1 ? sb.push_back(k): lb.push_back(k));
 
-#if USE_STACK
         while(sb.size() && lb.size()) {
             auto csb = sb.back(), clb = lb.back();
-            sb.pop_back(); lb.pop_back();
+            sb.pop_back();
+            lb.pop_back();
             prob_[csb] = cp[csb];
             alias_[csb] = clb;
             cp[clb] += cp[csb] - 1.;
@@ -55,23 +48,8 @@ struct AliasSampler {
             else
                 lb.push_back(clb);
         }
-        for(auto v: lb) prob_[lb[v]] = 1.;
-        for(auto v: sb) prob_[sb[v]] = 1.;
-#else
-        while(nsb && nlb) {
-            auto csb = sb[--nsb];
-            auto clb = lb[--nlb];
-            prob_[csb] = cp[csb];
-            alias_[csb] = clb;
-            cp[clb] += cp[csb] - 1.;
-            if(cp[clb] < 1)
-                sb[nsb++] = clb;
-            else
-                lb[nlb++] = clb;
-        }
-        while(nlb) prob_[lb[--nlb]] = 1.;
-        while(nsb) prob_[sb[--nsb]] = 1.;
-#endif
+        for(const auto v: lb) prob_[v] = 1.;
+        for(const auto v: sb) prob_[v] = 1.;
     }
     IT operator()() const {return sample();}
     IT operator()()       {return sample();}
@@ -80,7 +58,7 @@ struct AliasSampler {
         return urd_(rng_) < prob_[ind] ? ind : alias_[ind];
     }
     IT sample() const {
-        if constexpr(!mutable_rng) throw std::runtime_error("Not permitted.");
+        CONST_IF(!mutable_rng) throw std::runtime_error("Not permitted.");
         return const_cast<AliasSampler *>(this)->sample();
     }
 };

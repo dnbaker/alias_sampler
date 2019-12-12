@@ -19,4 +19,7 @@ int main() {
         assert(std::abs(v[i] - counts[i] / double(nrounds)) / v[i] < 0.15);
         assert(std::abs(v[i] - mcounts[i] / double(nrounds)) / v[i] < 0.15);
     }
+    std::vector<int> zomg(1000);
+    as(zomg.begin(),zomg.end());
+    mas(zomg.begin(),zomg.end());
 }

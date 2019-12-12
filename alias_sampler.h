@@ -98,7 +98,17 @@ public:
         std::sort(ret.begin(), ret.end());
         for(IT i = 0; i < n; ++i)
             if(urd_(rng_) >= prob_[ret[i]])
-                ret[i] = alias_[i];
+                ret[i] = alias_[ret[i]];
+    }
+    template<typename Iterator>
+    void operator()(Iterator beg, Iterator end, uint64_t seed=0) {
+        if(seed) this->seed(seed);
+        size_t n = std::distance(beg, end);
+        for(auto it = beg; it != end; *it++ = div_.mod(rng_()));
+        std::sort(beg, end);
+        for(auto it = beg; it != end; ++it)
+            if(urd_(rng_) >= prob_[*it])
+                *it = alias_[*it];
     }
     std::vector<IT> operator()(size_t n) const {
         CONST_IF(!mutable_rng) throw std::runtime_error("Not permitted.");
@@ -114,6 +124,7 @@ public:
     }
     auto sample(size_t n) const {return this->operator()(n);}
     auto sample(size_t n)       {return this->operator()(n);}
+    void seed(uint64_t seed) {this->rng_.seed(seed);}
 };
 
 template<typename FT=float,
@@ -173,11 +184,21 @@ public:
         std::sort(ret.begin(), ret.end());
         for(IT i = 0; i < n; ++i)
             if(this->urd_(this->rng_) >= this->prob_[ret[i]])
-                ret[i] = this->alias_[i];
+                ret[i] = this->alias_[ret[i]];
     }
     std::vector<IT> operator()(size_t n) const {
         CONST_IF(!mutable_rng) throw std::runtime_error("Not permitted.");
         return const_cast<MaskedAliasSampler *>(this)->operator()(n);
+    }
+    template<typename Iterator>
+    void operator()(Iterator beg, Iterator end, uint64_t seed=0) {
+        if(seed) this->seed(seed);
+        size_t n = std::distance(beg, end);
+        for(auto it = beg; it != end; *it++ = this->rng_() & bitmask_);
+        std::sort(beg, end);
+        for(auto it = beg; it != end; ++it)
+            if(this->urd_(this->rng_) >= this->prob_[*it])
+                *it = this->alias_[*it];
     }
     auto sample(size_t n) const {return this->operator()(n);}
     auto sample(size_t n)       {return this->operator()(n);}
@@ -189,6 +210,7 @@ public:
         CONST_IF(!mutable_rng) throw std::runtime_error("Not permitted.");
         return const_cast<MaskedAliasSampler *>(this)->sample();
     }
+    void seed(uint64_t seed) {this->rng_.seed(seed);}
 };
 } // alias
 #endif

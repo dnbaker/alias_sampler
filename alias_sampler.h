@@ -10,7 +10,7 @@ namespace alias {
 template<typename FT, typename IT=std::uint32_t, typename RNG=std::mt19937_64, bool mutable_rng=true>
 struct alias_sampler {
     size_t n_;
-    std::conditional<mutable_rng, RNG, mutable RNG> rng_;
+    mutable RNG rng_;
     mutable std::uniform_real_distribution<FT> urd_;
     std::unique<FT []> prob_;
     std::unique<IT []> alias_;
@@ -58,12 +58,12 @@ struct alias_sampler {
     IT operator()() const {return sample();}
     IT operator()() const {return sample();}
     IT sample() {
-        const auto ind = rng_() % n_; // Accelerate with fastrange later
+        const auto ind = rng_() % n_; // Accelerate with fast{mod, range} later
         return urd_(rng_) < prob_[ind] ? ind : alias_[ind];
     }
     IT sample() const {
         if constexpr(mutable_rng) {
-            const auto ind = rng_() % n_; // Accelerate with fastrange later
+            const auto ind = rng_() % n_;
             return urd_(rng_) < prob_[ind] ? ind : alias_[ind];
         } else {
             throw std::runtime_error("Not permitted.");

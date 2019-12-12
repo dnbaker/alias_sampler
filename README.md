@@ -6,6 +6,6 @@ libstdc++ uses binary search in a cumulative probability array, which both takes
 
 Travis CI included.
 
-The only disadvantage here is the issue of cache. Beyond a certain size, each sample requires a cache miss.
-For very large arrays and large numbers of samples, it may be suitable
-to create several sub-indexes to sample from in sequence to minimize this.
+These samplers provide both single samples (`sampler.sample()` or `sampler()`) and `sampler.sample(1000)`/`sampler(1000)`).
+Beyond a certain each successive sample of one item requires a cache miss; a bulk sample samples a set of integers
+in sequence and sorts them in order to do one pass through the alias table in order, which allows for both prefetching and minimizing cache misses.

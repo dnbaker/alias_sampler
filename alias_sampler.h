@@ -55,6 +55,8 @@ struct alias_sampler {
             prob_[sb[--nsb]] = 1.;
         }
     }
+    IT operator()() const {return sample();}
+    IT operator()() const {return sample();}
     IT sample() {
         const auto ind = rng_() % n_; // Accelerate with fastrange later
         return urd_(rng_) < prob_[ind] ? ind : alias_[ind];

@@ -103,7 +103,6 @@ public:
     template<typename Iterator>
     void operator()(Iterator beg, Iterator end, uint64_t seed=0) {
         if(seed) this->seed(seed);
-        size_t n = std::distance(beg, end);
         for(auto it = beg; it != end; *it++ = div_.mod(rng_()));
         std::sort(beg, end);
         for(auto it = beg; it != end; ++it)

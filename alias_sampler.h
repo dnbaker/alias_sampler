@@ -65,15 +65,27 @@ public:
         alias_ = std::make_unique<IT[]>(n_);
         auto cp(std::make_unique<FT[]>(n_));
         prob_ = std::make_unique<FT[]>(n_);
-        FT sum = 0.;
+        double sum = 0.;
         for(auto it = cp.get(), e = it + n_; it < e; ++it) {
             auto v = *start++;
             sum += v;
             *it = v;
         }
         sum = double(n_) / sum;
-        
+
+#ifdef _BLAZE_MATH_VECTOR_H_
+        // Use blaze if available
+        blaze::CustomVector<FT, blaze::unaligned, blaze::unpadded> cv(cp.get(), n_);
+        cv *= sum;
+#elif defined(_OPENMP)
+        // Otherwise openmp
+        _Pragma("omp parallel for")
+        for(size_t i = 0; i < n_; ++i)
+            cp[i] *= sum;
+#else
+        // Otherwise, nothing
         std::for_each(cp.get(), cp.get() + n_, [sum](auto &x) {x *= sum;});
+#endif
         std::vector<IT> sb, lb;
         for(IT k = n_; k--; (cp[k] < 1 ? &sb: &lb)->push_back(k));
 
@@ -83,8 +95,7 @@ public:
             lb.pop_back();
             prob_[csb] = cp[csb];
             alias_[csb] = clb;
-            cp[clb] += cp[csb] - 1.;
-            (cp[clb] < 1. ? &sb: &lb)->push_back(clb);
+            ((cp[clb] += cp[csb] - 1.) < 1. ? &sb: &lb)->push_back(clb);
         }
         for(const auto v: lb) prob_[v] = 1.;
         for(const auto v: sb) prob_[v] = 1.;
@@ -95,7 +106,11 @@ public:
         std::vector<IT> ret(n);
         for(IT i = 0; i < n; ++i)
             ret[i] = div_.mod(rng_());
+#ifndef PDQSORT_H
         std::sort(ret.begin(), ret.end());
+#else
+        pdqsort(ret.begin(), ret.end());
+#endif
         for(IT i = 0; i < n; ++i)
             if(urd_(rng_) >= prob_[ret[i]])
                 ret[i] = alias_[ret[i]];
@@ -104,7 +119,11 @@ public:
     void operator()(Iterator beg, Iterator end, uint64_t seed=0) {
         if(seed) this->seed(seed);
         for(auto it = beg; it != end; *it++ = div_.mod(rng_()));
+#ifndef PDQSORT_H
         std::sort(beg, end);
+#else
+        pdqsort(beg, end);
+#endif
         for(auto it = beg; it != end; ++it)
             if(urd_(rng_) >= prob_[*it])
                 *it = alias_[*it];

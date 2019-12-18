@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <memory>
 #include "./div.h"
+#include "./tsg.h"
 
 namespace alias {
 using std::size_t;
@@ -138,8 +139,14 @@ public:
         return const_cast<AliasSampler *>(this)->operator()(n);
     }
     IT sample() noexcept {
+#ifdef ALIAS_THREADSAFE
+        static thread_local tsg::ThreadSeededGen<RNG> rng;
+        const auto ind = div_.mod(rng());
+        return urd_(rng) < prob_[ind] ? ind : alias_[ind];
+#else
         const auto ind = div_.mod(rng_());
         return urd_(rng_) < prob_[ind] ? ind : alias_[ind];
+#endif
     }
     IT sample() const {
         CONST_IF(!mutable_rng) throw std::runtime_error("Not permitted.");
@@ -233,8 +240,14 @@ public:
     auto sample(size_t n) const {return this->operator()(n);}
     auto sample(size_t n)       {return this->operator()(n);}
     IT sample() noexcept {
+#ifdef ALIAS_THREADSAFE
+        static thread_local tsg::ThreadSeededGen<RNG> rng;
+        const auto ind = rng() & bitmask_;
+        return this->urd_(rng) < this->prob_[ind] ? ind : this->alias_[ind];
+#else
         const auto ind = this->rng_() & bitmask_;
         return this->urd_(this->rng_) < this->prob_[ind] ? ind : this->alias_[ind];
+#endif
     }
     IT sample() const {
         CONST_IF(!mutable_rng) throw std::runtime_error("Not permitted.");

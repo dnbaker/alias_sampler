@@ -58,6 +58,7 @@ protected:
     schism::Schismatic<IT> div_;
     AliasSampler(): div_(1) {}
 public:
+    bool sort_while_sampling = false;
     template<typename It>
     AliasSampler(It start, It end, uint64_t seed=13): n_(std::distance(start, end)), rng_(seed), div_(n_)
     {
@@ -102,31 +103,35 @@ public:
     }
     IT operator()() const noexcept {return sample();}
     IT operator()()       noexcept {return sample();}
+    template<typename It1, typename It2>
+    void conditional_sort(It1 it1, It2 it2) const {
+#if 0
+        static constexpr size_t nelem_threshold = 10000000;
+        static constexpr ssize_t sample_size_threshold = 1000;
+        if(this->n_ > nelem_threshold && it2 - it1 > sample_size_threshold) {
+#ifndef PDQSORT_H
+            std::sort(it1, it2);
+#else
+            pdqsort(it1, it2);
+#endif
+        }
+#else
+#  ifndef PDQSORT_H
+            std::sort(it1, it2);
+#    else
+            pdqsort(it1, it2);
+#  endif
+#endif
+    }
     std::vector<IT> operator()(size_t n) {
         std::vector<IT> ret(n);
-        for(IT i = 0; i < n; ++i)
-            ret[i] = div_.mod(rng_());
-#ifndef PDQSORT_H
-        std::sort(ret.begin(), ret.end());
-#else
-        pdqsort(ret.begin(), ret.end());
-#endif
-        for(IT i = 0; i < n; ++i)
-            if(urd_(rng_) >= prob_[ret[i]])
-                ret[i] = alias_[ret[i]];
+        this->operator()(ret.begin(), ret.end(), n);
+        return ret;
     }
     template<typename Iterator>
     void operator()(Iterator beg, Iterator end, uint64_t seed=0) {
         if(seed) this->seed(seed);
-        for(auto it = beg; it != end; *it++ = div_.mod(rng_()));
-#ifndef PDQSORT_H
-        std::sort(beg, end);
-#else
-        pdqsort(beg, end);
-#endif
-        for(auto it = beg; it != end; ++it)
-            if(urd_(rng_) >= prob_[*it])
-                *it = alias_[*it];
+        do *beg++ = this->sample(); while(beg != end);
     }
     std::vector<IT> operator()(size_t n) const {
         CONST_IF(!mutable_rng) throw std::runtime_error("Not permitted.");
@@ -197,12 +202,8 @@ public:
     IT operator()()       noexcept {return sample();}
     std::vector<IT> operator()(size_t n) {
         std::vector<IT> ret(n);
-        for(IT i = 0; i < n; ++i)
-            ret[i] = this->rng_() & bitmask_;
-        std::sort(ret.begin(), ret.end());
-        for(IT i = 0; i < n; ++i)
-            if(this->urd_(this->rng_) >= this->prob_[ret[i]])
-                ret[i] = this->alias_[ret[i]];
+        this->operator()(ret.begin(), ret.end(), n);
+        return ret;
     }
     std::vector<IT> operator()(size_t n) const {
         CONST_IF(!mutable_rng) throw std::runtime_error("Not permitted.");
@@ -211,13 +212,24 @@ public:
     template<typename Iterator>
     void operator()(Iterator beg, Iterator end, uint64_t seed=0) {
         if(seed) this->seed(seed);
-        size_t n = std::distance(beg, end);
-        for(auto it = beg; it != end; *it++ = this->rng_() & bitmask_);
-        std::sort(beg, end);
-        for(auto it = beg; it != end; ++it)
-            if(this->urd_(this->rng_) >= this->prob_[*it])
-                *it = this->alias_[*it];
+        do *beg++ = this->sample(); while(beg != end);
     }
+#if 0
+    template<typename Iterator>
+    void operator()(Iterator beg, Iterator end, uint64_t seed=0) {
+        if(seed) this->seed(seed);
+        if(this->sort_while_sampling) {
+            for(auto it = beg; it != end; *it++ = this->rng_() & bitmask_);
+            this->conditional_sort(beg, end);
+            for(auto it = beg; it != end; ++it)
+                if(this->urd_(this->rng_) >= this->prob_[*it])
+                    *it = this->alias_[*it];
+        } else {
+            while(beg != end)
+                *beg++ = this->sample();
+        }
+    }
+#endif
     auto sample(size_t n) const {return this->operator()(n);}
     auto sample(size_t n)       {return this->operator()(n);}
     IT sample() noexcept {

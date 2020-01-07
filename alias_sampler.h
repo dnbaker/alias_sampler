@@ -12,6 +12,11 @@
 
 namespace alias {
 using std::size_t;
+#ifdef roundup
+#undef roundup
+#define REDEF_roundup
+#endif
+
 inline constexpr uint64_t roundup(uint64_t i) {
     --i;
     i |= i >> 1;
@@ -253,7 +258,14 @@ public:
         CONST_IF(!mutable_rng) throw std::runtime_error("Not permitted.");
         return const_cast<MaskedAliasSampler *>(this)->sample();
     }
-    void seed(uint64_t seed) {this->rng_.seed(seed);}
+    void seed(uint64_t seed) {
+        this->rng_.seed(seed);
+    }
 };
 } // alias
+#ifdef REDEF_roundup
+#  define roundup(x, y) ((((x) % (y)) == 0) ? (x) : ((x) + ((y) - ((x) % (y)))))
+#  undef REDEF_roundup
 #endif
+
+#endif /* ALIAS_SAMPLER_H__ */

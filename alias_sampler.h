@@ -160,6 +160,7 @@ public:
     auto sample(size_t n) const {return this->operator()(n);}
     auto sample(size_t n)       {return this->operator()(n);}
     void seed(uint64_t seed) {this->rng_.seed(seed);}
+    size_t size() const {return n_;}
 };
 
 template<typename FT=float,
@@ -173,6 +174,7 @@ class MaskedAliasSampler: public AliasSampler<FT, RNG, IT, mutable_rng> {
      */
 protected:
     IT bitmask_;
+    using super = AliasSampler<FT, RNG, IT, mutable_rng>;
 public:
     template<typename It>
     MaskedAliasSampler(It start, It end, uint64_t seed=13)
@@ -261,6 +263,7 @@ public:
     void seed(uint64_t seed) {
         this->rng_.seed(seed);
     }
+    size_t size() const {return super::size();}
 };
 } // alias
 #ifdef REDEF_roundup

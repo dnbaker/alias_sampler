@@ -146,12 +146,13 @@ public:
     IT sample() noexcept {
 #ifdef ALIAS_THREADSAFE
         static thread_local tsg::ThreadSeededGen<RNG> rng;
-        const auto ind = div_.mod(rng());
-        return urd_(rng) < prob_[ind] ? ind : alias_[ind];
 #else
-        const auto ind = div_.mod(rng_());
-        return urd_(rng_) < prob_[ind] ? ind : alias_[ind];
+        auto &rng(rng_);
 #endif
+        auto ind = div_.mod(rng());
+        if(urd_(rng) >= prob_[ind]) ind = alias_[ind];
+        assert(ind < n_);
+        return ind;
     }
     IT sample() const {
         CONST_IF(!mutable_rng) throw std::runtime_error("Not permitted.");
@@ -249,12 +250,12 @@ public:
     IT sample() noexcept {
 #ifdef ALIAS_THREADSAFE
         static thread_local tsg::ThreadSeededGen<RNG> rng;
-        const auto ind = rng() & bitmask_;
-        return this->urd_(rng) < this->prob_[ind] ? ind : this->alias_[ind];
 #else
-        const auto ind = this->rng_() & bitmask_;
-        return this->urd_(this->rng_) < this->prob_[ind] ? ind : this->alias_[ind];
+        auto &rng(this->rng_);
 #endif
+        auto ind = rng() & bitmask_;
+        if(this->urd_(rng) >= this->prob_[ind]) ind = this->alias_[ind];
+        return ind;
     }
     IT sample() const {
         CONST_IF(!mutable_rng) throw std::runtime_error("Not permitted.");

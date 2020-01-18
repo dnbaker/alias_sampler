@@ -8,7 +8,7 @@ int main() {
     std::vector<int> counts(v.size()), mcounts(v.size());
     unsigned nrounds = 1500;
     for(size_t i = 0; i < nrounds; ++i) {
-        ++counts[as()];
+        ++counts.at(as());
         ++mcounts.at(mas());
     }
     for(size_t i = 0; i < v.size(); ++i) {

@@ -3,6 +3,8 @@
 
 int main() {
     std::vector<double> v{0.10, 0.225, 0.45, 0.10, .125};
+    for(auto &i: v)
+        i *= 50;
     alias::AliasSampler<float, std::mt19937> as(v.begin(), v.end());
     alias::MaskedAliasSampler<float, std::mt19937> mas(v.begin(), v.end());
     std::vector<int> counts(v.size()), mcounts(v.size());
@@ -11,6 +13,8 @@ int main() {
         ++counts.at(as());
         ++mcounts.at(mas());
     }
+    for(auto &i: v)
+        i /= 50;
     for(size_t i = 0; i < v.size(); ++i) {
 #if VERBOSE_AF
         std::fprintf(stderr, "Expected [%f/%f/%f/%f]. Got [%f/%f/%f/%f].\n",

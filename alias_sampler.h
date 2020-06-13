@@ -134,10 +134,32 @@ public:
         this->operator()(ret.begin(), ret.end(), n);
         return ret;
     }
+    template<typename P, typename=std::enable_if_t<std::is_integral<P>::value>>
+    void operator()(P *beg, P *end, uint64_t seed) {
+        this->seed(seed);
+        this->operator()(beg, end);
+    }
+    template<typename P, typename=std::enable_if_t<std::is_integral<P>::value>>
+    void sample(P *beg, P *end, uint64_t seed) {
+        this->operator()(beg, end, seed);
+    }
+    template<typename P, typename=std::enable_if_t<std::is_integral<P>::value>>
+    void sample(P *beg, P *end) {
+        this->operator()(beg, end);
+    }
+    template<typename P, typename=std::enable_if_t<std::is_integral<P>::value>>
+    void operator()(P *beg, P *end) {
+#ifdef __GNUC__
+#pragma GCC unroll 8
+#endif
+        for(size_t i = 0, d = end - beg; i < d; ++i) {
+            beg[i] = sample();
+        }
+    }
     template<typename Iterator>
     void operator()(Iterator beg, Iterator end, uint64_t seed=0) {
         if(seed) this->seed(seed);
-        do *beg++ = this->sample(); while(beg != end);
+        while(beg != end) *beg++ = this->sample(); 
     }
     std::vector<IT> operator()(size_t n) const {
         CONST_IF(!mutable_rng) throw std::runtime_error("Not permitted.");
@@ -228,6 +250,28 @@ public:
     void operator()(Iterator beg, Iterator end, uint64_t seed=0) {
         if(seed) this->seed(seed);
         do *beg++ = this->sample(); while(beg != end);
+    }
+    template<typename P, typename=std::enable_if_t<std::is_integral<P>::value>>
+    void operator()(P *beg, P *end, uint64_t seed) {
+        this->seed(seed);
+        this->operator()(beg, end);
+    }
+    template<typename P, typename=std::enable_if_t<std::is_integral<P>::value>>
+    void sample(P *beg, P *end, uint64_t seed) {
+        this->operator()(beg, end, seed);
+    }
+    template<typename P, typename=std::enable_if_t<std::is_integral<P>::value>>
+    void sample(P *beg, P *end) {
+        this->operator()(beg, end);
+    }
+    template<typename P, typename=std::enable_if_t<std::is_integral<P>::value>>
+    void operator()(P *beg, P *end) {
+#ifdef __GNUC__
+#pragma GCC unroll 8
+#endif
+        for(size_t i = 0, d = end - beg; i < d; ++i) {
+            beg[i] = sample();
+        }
     }
 #if 0
     template<typename Iterator>

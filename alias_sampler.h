@@ -111,27 +111,15 @@ public:
     IT operator()()       noexcept {return sample();}
     template<typename It1, typename It2>
     void conditional_sort(It1 it1, It2 it2) const {
-#if 0
-        static constexpr size_t nelem_threshold = 10000000;
-        static constexpr ssize_t sample_size_threshold = 1000;
-        if(this->n_ > nelem_threshold && it2 - it1 > sample_size_threshold) {
 #ifndef PDQSORT_H
             std::sort(it1, it2);
-#else
+#  else
             pdqsort(it1, it2);
-#endif
-        }
-#else
-#  ifndef PDQSORT_H
-            std::sort(it1, it2);
-#    else
-            pdqsort(it1, it2);
-#  endif
 #endif
     }
     std::vector<IT> operator()(size_t n) {
         std::vector<IT> ret(n);
-        this->operator()(ret.begin(), ret.end(), n);
+        this->operator()(ret.data(), ret.data() + n);
         return ret;
     }
     template<typename P, typename=std::enable_if_t<std::is_integral<P>::value>>
@@ -273,22 +261,6 @@ public:
             beg[i] = sample();
         }
     }
-#if 0
-    template<typename Iterator>
-    void operator()(Iterator beg, Iterator end, uint64_t seed=0) {
-        if(seed) this->seed(seed);
-        if(this->sort_while_sampling) {
-            for(auto it = beg; it != end; *it++ = this->rng_() & bitmask_);
-            this->conditional_sort(beg, end);
-            for(auto it = beg; it != end; ++it)
-                if(this->urd_(this->rng_) >= this->prob_[*it])
-                    *it = this->alias_[*it];
-        } else {
-            while(beg != end)
-                *beg++ = this->sample();
-        }
-    }
-#endif
     auto sample(size_t n) const {return this->operator()(n);}
     auto sample(size_t n)       {return this->operator()(n);}
     IT sample() noexcept {
